@@ -3,3 +3,48 @@
 select distinct substring (KunPLZ,1,2) from Kunde 
 --b
 select * into Niederlassung from trommelhelden..quelleNiederlassung 
+
+select * from Niederlassung
+--c
+alter table Niederlassung add primary key (NLNR)
+
+--d
+
+alter table mitarbeiter add NLNr int
+
+update Mitarbeiter set NLNr =(
+select (NLNr) 
+from Niederlassung 
+where Mitarbeiter.MitEinsatzort = Ort)
+
+select * from Mitarbeiter
+--e 
+
+alter table Mitarbeiter drop column MitEinsatzort
+
+select * from Mitarbeiter
+
+--f 
+alter table Mitarbeiter add foreign key (NlNr) references niederlassung (NLNr)
+
+--3
+
+
+
+--4
+
+insert into Auftrag select * from trommelhelden..quelledbs2Auftrag
+insert into Montage select * from trommelhelden..quelledbs2montage
+
+select count (Aufnr) from Auftrag
+select count (EtID) from Montage
+
+--5
+create table Rechnung(
+KunNr int foreign key references Kunde(kunNr) not null,
+AufNr int foreign key references Auftrag(AufNr) not null, 
+RechDat date not null,
+RechBetrag smallmoney not null,
+primary key (KunNr, AufNr))
+
+--6
