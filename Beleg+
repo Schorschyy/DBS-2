@@ -1,0 +1,5 @@
+--2
+--a
+select distinct substring (KunPLZ,1,2) from Kunde 
+--b
+select * into Niederlassung from trommelhelden..quelleNiederlassung 
