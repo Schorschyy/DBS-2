@@ -33,17 +33,17 @@ Declare @Mindest int
 Set @Mindest = 50
 Select EtID, EtBezeichnung, EtAnzLager From MindestET(@Mindest)
 
-
 --Aufgabe 2
 --2.1 Default
 Alter Table Mitarbeiter Add Constraint DF_Tätigkeit Default 'Monteur' For MitJob
 Select * from Mitarbeiter
-Insert into Mitarbeiter (MitID, MitName, MitVorname, MitGebDat, MitStundensatz, NLNr) Values (113, 'Pfund', 'Robert', GetDate(), 80, 1)
+Insert into Mitarbeiter (MitID, MitName, MitVorname, MitGebDat, MitStundensatz, NLNr) Values (113, 'Kuehnel', 'Georg', GetDate(), 80, 1)
+Delete from Mitarbeiter where MitID = 113
 
 Alter Table Auftrag Add Constraint DF_Eingang Default Getdate() For AufDat
 Select * from Auftrag
-Insert into Auftrag (Aufnr, MitID, KunNr) Values (13000, 113, 1501)
-Delete from Auftrag where Aufnr = 13000
+Insert into Auftrag (Aufnr, MitID, KunNr) Values (14000, 113, 1501)
+Delete from Auftrag where Aufnr = 14000
 
 --2.2 Check
 Alter Table Auftrag Add Constraint CK_Datum Check (datediff(day, AufDat, ErlDat) >= 0)
@@ -51,6 +51,8 @@ Select * from Auftrag
 
 Select * from Mitarbeiter
 Alter Table Mitarbeiter Add Constraint CK_MitID Check (MitID between 100 and 999)
+--Test
+Insert into Mitarbeiter (MitID, MitName, MitVorname, MitGebDat, MitStundensatz, NLNr) Values (1, 'Kuehnel', 'Georg', GetDate(), 80, 1)
 
 
 --2.3 Foreign Key
