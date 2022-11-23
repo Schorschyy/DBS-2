@@ -57,7 +57,7 @@ Insert into Mitarbeiter (MitID, MitName, MitVorname, MitGebDat, MitStundensatz, 
 --2.3 Foreign Key
 
 --1. Option: Löschen per Randleiste (Tables > Montage > Keys)
---2. OPtion:
+--2. Option:
 Alter table Montage drop constraint <old key> 
 
 Alter table Montage add constraint fk_Aufnr foreign key (Aufnr) references Auftrag(Aufnr) on Delete Cascade
@@ -78,9 +78,9 @@ If (Select count(*) from Mitarbeiter where (MitJob = 'Monteur' or MitJob ='Meist
 		Rollback
 	End
 
---a) funktioniert
+--a) funktioniert UFF
 Insert into Mitarbeiter (MitID, MitName, MitVorname, MitGebDat, MitJob) Values (114, 'Schumann', 'Paul', GetDate(), 'Azubi')
---b) funktioniert
+--b) funktioniert UFF
 Update Mitarbeiter set MitJob = 'Azubi' Where MitID = 114
 --c) funktioniert
 Update Mitarbeiter set MitJob = 'Monteur', MitStundensatz = 80 Where MitID = 114
@@ -123,8 +123,7 @@ INSERT INTO Rechnung SELECT KunNr, AufNr, Erldat, 180  -- geht nicht, trigger Ab
 FROM Auftrag WHERE AufNr IN (10050,10052,10060)
 --
 INSERT INTO rechnung SELECT kunnr, aufnr, erldat, 135  -- geht
-FROM auftrag WHERE aufnr IN (10056,10059,10061)   
-
+FROM auftrag WHERE aufnr IN (10056,10059,10061)
 
 --3.3 Protokollierung
 --a)
@@ -150,6 +149,7 @@ Anzahl int not Null,
 Benutzer CHAR(20) Null,
 Zeit DATETIME Null,
 Änderung VARCHAR(100))
+
 --c)
 CREATE TRIGGER LöschProtokoll on Auftrag
 For Delete As
@@ -166,6 +166,8 @@ For Delete As
 		Raiserror('Abbruch, Trigger funktioniert (Montage)', 16, 10)
 		Rollback
 	End
+
+
 --e)
 Disable Trigger LöschProtokoll on Auftrag
 Disable Trigger LöschProtokoll_Montage on Montage
