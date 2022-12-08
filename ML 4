@@ -1,0 +1,80 @@
+-- 4 Meilenstein
+
+--A
+--Person B: he tried he failed
+
+--B,C
+CREATE USER s83829 FOR LOGIN [smb\s83829] WITH default_schema = extern --tippfehler zuerst
+CREATE SCHEMA extern AUTHORIZATION s83829
+
+--D
+-- USE iw21s83811 -funktioniert
+
+--E
+-- SELECT * FROM Auftrag  --funktioniert nicht 
+
+--F
+GRANT select ON Auftrag TO s83815
+
+--G
+-- SELECT * FROM Auftrag
+--H
+sp_helpuser
+
+--I
+--B: Begin Transaction Select * from Auftrag (holdlock) commit 
+
+--J
+SELECT * FROM Auftrag
+UPDATE Auftrag SET Beschreibung = 'Neue Beschreibung' WHERE Aufnr = 5146
+--geht UFF
+
+--K
+sp_lock
+sp_who
+
+--L
+-- B: Begin Transaction Select * from Auftrag (holdlock) rollback
+
+--M
+UPDATE Auftrag SET Beschreibung = 'Neue Beschreibung' WHERE Aufnr = 5148
+-- geht supi
+
+--N
+--DELETE FROM Auftrag WHERE Aufnr = 5001
+--geht nícht, supi
+
+--O
+GRANT DELETE ON Auftrag TO s83815
+
+--P
+--DELETE FROM Auftrag WHERE Aufnr = 5001
+--geht, subbi
+
+--Q
+SELECT * FROM Auftrag
+--> Auftrag 5001 fehlt
+
+--R
+GRANT create table TO s83815
+
+--S
+-- CREATE TABLE Auftrag3 (AuftragID primary key not null); INSERT INTO Auftrag3 VALUES(5)
+-- geht
+
+--t)
+SELECT * FROM extern.Auftrag3
+--klappt
+
+--u)
+SELECT * FROM Auftrag
+
+--v)
+-- DROP TABLE extern.Auftrag
+
+--w)
+REVOKE create table FROM s83815
+REVOKE delete ON Auftrag FROM s83815
+REVOKE select ON Auftrag FROM s83815
+DROP SCHEMA extern
+DROP USER s83815
