@@ -1,0 +1,13 @@
+ML 5
+
+SELECT * INTO auftrag3 FROM trommelhelden..quelleAuftrag2011
+SELECT * INTO montage3 FROM trommelhelden..quelleMontage2011
+5.
+
+SELECT COUNT(*) FROM auftrag3
+
+6.
+SELECT mitid, COUNT(*)
+FROM auftrag3
+WHERE anfahrt = 5 and AufDat BETWEEN '2011-01-01' AND '2011-02-01'
+GROUP BY mitid
