@@ -1,13 +1,111 @@
-ML 5
+--ML 5
 
 SELECT * INTO auftrag3 FROM trommelhelden..quelleAuftrag2011
 SELECT * INTO montage3 FROM trommelhelden..quelleMontage2011
-5.
+--5.
 
 SELECT COUNT(*) FROM auftrag3
 
-6.
+--6.
 SELECT mitid, COUNT(*)
 FROM auftrag3
 WHERE anfahrt = 5 and AufDat BETWEEN '2011-01-01' AND '2011-02-01'
 GROUP BY mitid
+
+--a
+-- sortierter (sort) Zugriff, ESC Select: 1,11332
+--b
+CREATE INDEX index_name ON auftrag3 (Anfahrt, Aufdat);
+--c
+-- sortierter Zugriff führt zu einem Inner Join, und von da zu einem Index Seek sowie RID Lookup
+-- ESC Select: 0,310799 Warum Unterschiedlich?
+-- deutlich weniger Kosten
+--d
+SELECT mitid, COUNT(*)
+FROM auftrag3
+WHERE anfahrt = 5 and AufDat BETWEEN '2011-01-01' AND '2011-04-01'
+GROUP BY mitid
+-- März: ESC Select: 0,525412 
+-- April: ESC Select: 0,760089
+-- ESC Select und RID Lookup steigen, Sort Kosten und Index Seek sinken
+--e
+SELECT mitid, COUNT(*)
+FROM auftrag3
+WHERE anfahrt = 5 and AufDat BETWEEN '2011-01-01' AND '2011-09-01'
+GROUP BY mitid
+-- der Ablaufplan gleicht dem aus 6.a), sprich der Tabelle ohne Index
+-- keine Ahnung warum
+
+--7.
+-- a Ich nehme an, dass jeder Ablaufplan gleich ist, sprich Select, Inner Join und dann Table Scan (bzw. parallel Index Scan)
+
+SELECT k.KunNr, k.KunName
+FROM kunde k, auftrag3 a
+WHERE k.KunNr=a.KunNr
+AND a.anfahrt=80
+
+SELECT k.KunNr, k.KunName
+FROM kunde k, auftrag3 a
+WHERE a.anfahrt=80
+AND k.KunNr=a.KunNr
+
+SELECT k.KunNr, k.KunName
+FROM kunde k JOIN auftrag3 a ON
+k.KunNr=a.KunNr
+AND a.anfahrt=80
+
+SELECT k.KunNr, k.KunName
+FROM auftrag3 a JOIN kunde k ON
+k.KunNr=a.KunNr
+AND a.anfahrt=80
+
+-- b Annahme ist richtig
+
+--8
+SELECT a.aufnr, erldat, k.kunort, SUM(anzahl * etpreis)
+FROM auftrag3 a
+ JOIN montage3 m ON a.aufnr = m.aufnr
+ JOIN ersatzteil e ON m.etid = e.etid
+ JOIN mitarbeiter ma ON a.mitid = ma.mitid
+ JOIN kunde k ON a.kunnr = k.kunnr
+GROUP BY a.aufnr, erldat, k.kunort
+--a
+--ESC 3,85162
+SET SHOWPLAN_ALL ON 
+--ESC 3,851618
+
+SELECT a.aufnr, erldat, k.kunort, SUM(anzahl * etpreis)  FROM auftrag3 a   JOIN montage3 m ON a.aufnr = m.aufnr   JOIN ersatzteil e ON m.etid = e.etid   JOIN mitarbeiter ma ON a.mitid = ma.mitid   JOIN kunde k ON a.kunnr = k.kunnr  GROUP BY a.aufnr, erldat, k.kunort
+  |--Parallelism(Gather Streams)
+       |--Hash Match(Aggregate, HASH:([a].[AufNr], [a].[ErlDat], [k].[KunOrt]), RESIDUAL:([iw21s83811].[dbo].[auftrag3].[AufNr] as [a].[AufNr] = [iw21s83811].[dbo].[auftrag3].[AufNr] as [a].[AufNr] AND [iw21s83811].[dbo].[auftrag3].[ErlDat] as [a].[ErlDat] = [iw21s83811].[dbo].[auftrag3].[ErlDat] as [a].[ErlDat] AND [iw21s83811].[dbo].[Kunde].[KunOrt] as [k].[KunOrt] = [iw21s83811].[dbo].[Kunde].[KunOrt] as [k].[KunOrt]) DEFINE:([Expr1007]=SUM([Expr1008]*[iw21s83811].[dbo].[Ersatzteil].[EtPreis] as [e].[EtPreis])))
+            |--Parallelism(Repartition Streams, Hash Partitioning, PARTITION COLUMNS:([a].[AufNr], [a].[ErlDat], [k].[KunOrt]))
+                 |--Hash Match(Inner Join, HASH:([e].[EtID])=([m].[EtID]), RESIDUAL:([iw21s83811].[dbo].[Ersatzteil].[EtID] as [e].[EtID]=[iw21s83811].[dbo].[montage3].[EtID] as [m].[EtID]))
+                      |--Parallelism(Distribute Streams, Broadcast Partitioning)
+                      |    |--Clustered Index Scan(OBJECT:([iw21s83811].[dbo].[Ersatzteil].[PK__Ersatzte__E294A340934D33B6] AS [e]))
+                      |--Hash Match(Inner Join, HASH:([a].[AufNr])=([m].[AufNr]))
+                           |--Parallelism(Repartition Streams, Hash Partitioning, PARTITION COLUMNS:([a].[AufNr]))
+                           |    |--Hash Match(Inner Join, HASH:([k].[KunNr])=([a].[KunNr]))
+                           |         |--Parallelism(Repartition Streams, Hash Partitioning, PARTITION COLUMNS:([k].[KunNr]))
+                           |         |    |--Clustered Index Scan(OBJECT:([iw21s83811].[dbo].[Kunde].[PK__Kunde__B067D81D97681233] AS [k]))
+                           |         |--Parallelism(Repartition Streams, Hash Partitioning, PARTITION COLUMNS:([a].[KunNr]))
+                           |              |--Hash Match(Inner Join, HASH:([ma].[MitID])=([a].[MitID]), RESIDUAL:([iw21s83811].[dbo].[Mitarbeiter].[MitID] as [ma].[MitID]=[iw21s83811].[dbo].[auftrag3].[MitID] as [a].[MitID]))
+                           |                   |--Parallelism(Distribute Streams, Broadcast Partitioning)
+                           |                   |    |--Clustered Index Scan(OBJECT:([iw21s83811].[dbo].[Mitarbeiter].[PK__Mitarbei__7D0DA808FE999180] AS [ma]))
+                           |                   |--Table Scan(OBJECT:([iw21s83811].[dbo].[auftrag3] AS [a]))
+                           |--Compute Scalar(DEFINE:([Expr1008]=CONVERT_IMPLICIT(smallmoney,[iw21s83811].[dbo].[montage3].[Anzahl] as [m].[Anzahl],0)))
+                                |--Parallelism(Repartition Streams, Hash Partitioning, PARTITION COLUMNS:([m].[AufNr]))
+                                     |--Table Scan(OBJECT:([iw21s83811].[dbo].[montage3] AS [m]))
+
+--b
+--c
+SET FORCEPLAN OFF
+--d
+SELECT a.aufnr, erldat, k.kunort, SUM(anzahl * etpreis)
+FROM auftrag3 a
+ JOIN montage3 m ON a.aufnr = m.aufnr
+ JOIN ersatzteil e ON m.etid = e.etid
+ JOIN mitarbeiter ma ON a.mitid = ma.mitid
+ JOIN kunde k ON a.kunnr = k.kunnr
+GROUP BY a.aufnr, erldat, k.kunort
+
+-- Man kann feststellen, dass, dadurch dass die automatische Optimierung ignoriert wird, das Erstellen der Abfrage wesentlich aufwendiger ist.
+-- Der Ablaufplan ist ebenfalls etwas weiter/größer
